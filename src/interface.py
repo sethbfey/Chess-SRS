@@ -9,7 +9,9 @@ PIECES_FOLDER = Path(__file__).parent / "assets" / "pieces"
 
 LIGHT_SQUARE_COLOR = "#EBECD0"
 DARK_SQUARE_COLOR = "#739552"
-SELECTED_SQUARE_COLOR = "#F5F682"
+
+LIGHT_HIGHLIGHT_COLOR = "#F5F682"
+DARK_HIGHLIGHT_COLOR = "#B9CA43"
 
 SQUARE_STYLE = (
     "width: 100px; "
@@ -38,6 +40,9 @@ class BoardState:
         self.board_rows = []
         self.square_elements = {}
         self.piece_elements = {}
+        self.square_elements = {}
+        self.piece_elements = {}
+        self.coordinate_elements = {}
 
 
 def load_piece_svgs():
@@ -114,8 +119,25 @@ def base_square_color(square):
     return LIGHT_SQUARE_COLOR
 
 
-def coordinate_text_color(square):
-    if base_square_color(square) == DARK_SQUARE_COLOR:
+def is_dark_square(square):
+    file_index = chess.square_file(square)
+    rank_index = chess.square_rank(square)
+    return (file_index + rank_index) % 2 == 0
+
+
+def square_background_color(square, is_highlighted):
+    if is_dark_square(square):
+        if is_highlighted:
+            return DARK_HIGHLIGHT_COLOR
+        return DARK_SQUARE_COLOR
+
+    if is_highlighted:
+        return LIGHT_HIGHLIGHT_COLOR
+    return LIGHT_SQUARE_COLOR
+
+
+def coordinate_text_color(square, is_highlighted):
+    if is_dark_square(square) and not is_highlighted:
         return LIGHT_SQUARE_COLOR
     return DARK_SQUARE_COLOR
 
@@ -139,22 +161,31 @@ def draw_board(board_state):
 
                     with square_element:
                         piece_element = ui.html("", sanitize=False).classes("chess-piece").style(PIECE_STYLE)
-                        ui.label(coordinate).style(COORDINATE_STYLE + f"color: {coordinate_text_color(square)};")
+                        coordinate_element = ui.label(coordinate).style(COORDINATE_STYLE)
 
                     board_state.square_elements[square] = square_element
                     board_state.piece_elements[square] = piece_element
+                    board_state.coordinate_elements[square] = coordinate_element
 
     update_board(board_state)
 
 
 def update_board(board_state):
+    last_move_squares = []
+    if board_state.board.move_stack:
+        last_move = board_state.board.peek()
+        last_move_squares = [last_move.from_square, last_move.to_square]
+
     for square in chess.SQUARES:
-        if square == board_state.selected_square:
-            square_color = SELECTED_SQUARE_COLOR
-        else:
-            square_color = base_square_color(square)
+        is_selected = square == board_state.selected_square
+        is_last_move_square = square in last_move_squares
+        is_highlighted = is_selected or is_last_move_square
+
+        square_color = square_background_color(square, is_highlighted)
+        text_color = coordinate_text_color(square, is_highlighted)
 
         board_state.square_elements[square].style(f"background-color: {square_color}")
+        board_state.coordinate_elements[square].style(f"color: {text_color}")
 
         piece = board_state.board.piece_at(square)
         if piece is None:
