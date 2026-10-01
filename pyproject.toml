@@ -4,4 +4,7 @@ version = "0.1.0"
 description = "A NiceGUI application for drilling Lichess opening repertoires using FSRS spaced repetition."
 readme = "README.md"
 requires-python = ">=3.13.5"
-dependencies = []
+dependencies = [
+    "chess>=1.11.2",
+    "nicegui>=3.17.1",
+]
