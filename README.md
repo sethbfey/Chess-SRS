@@ -1,0 +1,1 @@
+A NiceGUI application for drilling Lichess opening repertoires using FSRS spaced repetition.
