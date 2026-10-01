@@ -24,7 +24,8 @@ COORDINATE_STYLE = (
     "font-weight: bold; "
 )
 
-PIECE_STYLE = "width: 100px; height: 100px;"
+PIECE_STYLE = "width: 100px; height: 100px; pointer-events: none;"
+PIECE_CSS = ".chess-piece svg { width: 100%; height: 100%; display: block; }"
 
 
 class BoardState:
@@ -33,15 +34,29 @@ class BoardState:
         self.white_at_bottom = True
         self.selected_square = None
 
+        self.board_column = None
+        self.board_rows = []
+        self.square_elements = {}
+        self.piece_elements = {}
 
-def piece_image_path(piece):
-    if piece.color == chess.WHITE:
-        color_letter = "w"
-    else:
-        color_letter = "b"
 
-    piece_letter = piece.symbol().upper()
-    return PIECES_FOLDER / f"{color_letter}{piece_letter}.svg"
+def load_piece_svgs():
+    piece_svgs = {}
+    for color_letter in ["w", "b"]:
+        for piece_letter in ["K", "Q", "R", "B", "N", "P"]:
+            svg_path = PIECES_FOLDER / f"{color_letter}{piece_letter}.svg"
+
+            if color_letter == "w":
+                symbol = piece_letter
+            else:
+                symbol = piece_letter.lower()
+
+            piece_svgs[symbol] = svg_path.read_text()
+
+    return piece_svgs
+
+
+PIECE_SVGS = load_piece_svgs()
 
 
 def create_move(board, from_square, to_square):
@@ -79,7 +94,7 @@ def handle_square_click(board_state, clicked_square):
             board.push(move)
         board_state.selected_square = None
 
-    draw_board.refresh()
+    update_board(board_state)
 
 
 def create_click_handler(board_state, square):
@@ -90,43 +105,74 @@ def create_click_handler(board_state, square):
 
 
 @ui.refreshable
-def draw_board(board_state):
-    if board_state.white_at_bottom:
-        rank_indexes_top_to_bottom = [7, 6, 5, 4, 3, 2, 1, 0]
-        file_indexes_left_to_right = [0, 1, 2, 3, 4, 5, 6, 7]
-    else:
-        rank_indexes_top_to_bottom = [0, 1, 2, 3, 4, 5, 6, 7]
-        file_indexes_left_to_right = [7, 6, 5, 4, 3, 2, 1, 0]
+def base_square_color(square):
+    file_index = chess.square_file(square)
+    rank_index = chess.square_rank(square)
 
-    with ui.column().style("gap: 0"):
-        for rank_index in rank_indexes_top_to_bottom:
-            with ui.row().style("gap: 0"):
-                for file_index in file_indexes_left_to_right:
+    if (file_index + rank_index) % 2 == 0:
+        return DARK_SQUARE_COLOR
+    return LIGHT_SQUARE_COLOR
+
+
+def coordinate_text_color(square):
+    if base_square_color(square) == DARK_SQUARE_COLOR:
+        return LIGHT_SQUARE_COLOR
+    return DARK_SQUARE_COLOR
+
+
+def draw_board(board_state):
+    ui.add_css(PIECE_CSS)
+
+    board_state.board_column = ui.column().style("gap: 0")
+    with board_state.board_column:
+        for rank_index in [7, 6, 5, 4, 3, 2, 1, 0]:
+            board_row = ui.row().style("gap: 0; flex-wrap: nowrap")
+            board_state.board_rows.append(board_row)
+
+            with board_row:
+                for file_index in [0, 1, 2, 3, 4, 5, 6, 7]:
                     square = chess.square(file_index, rank_index)
                     coordinate = chess.square_name(square).upper()
 
-                    if (file_index + rank_index) % 2 == 0:
-                        square_color = DARK_SQUARE_COLOR
-                        text_color = LIGHT_SQUARE_COLOR
-                    else:
-                        square_color = LIGHT_SQUARE_COLOR
-                        text_color = DARK_SQUARE_COLOR
-
-                    if square == board_state.selected_square:
-                        square_color = SELECTED_SQUARE_COLOR
-
-                    square_style = SQUARE_STYLE + f"background-color: {square_color};"
-                    square_element = ui.element("div").style(square_style)
+                    square_element = ui.element("div").style(SQUARE_STYLE)
                     square_element.on("click", create_click_handler(board_state, square))
 
                     with square_element:
-                        piece = board_state.board.piece_at(square)
-                        if piece is not None:
-                            ui.image(piece_image_path(piece)).style(PIECE_STYLE)
+                        piece_element = ui.html("", sanitize=False).classes("chess-piece").style(PIECE_STYLE)
+                        ui.label(coordinate).style(COORDINATE_STYLE + f"color: {coordinate_text_color(square)};")
 
-                        ui.label(coordinate).style(COORDINATE_STYLE + f"color: {text_color};")
+                    board_state.square_elements[square] = square_element
+                    board_state.piece_elements[square] = piece_element
+
+    update_board(board_state)
+
+
+def update_board(board_state):
+    for square in chess.SQUARES:
+        if square == board_state.selected_square:
+            square_color = SELECTED_SQUARE_COLOR
+        else:
+            square_color = base_square_color(square)
+
+        board_state.square_elements[square].style(f"background-color: {square_color}")
+
+        piece = board_state.board.piece_at(square)
+        if piece is None:
+            board_state.piece_elements[square].content = ""
+        else:
+            board_state.piece_elements[square].content = PIECE_SVGS[piece.symbol()]
 
 
 def flip_board(board_state):
     board_state.white_at_bottom = not board_state.white_at_bottom
-    draw_board.refresh()
+
+    if board_state.white_at_bottom:
+        column_direction = "column"
+        row_direction = "row"
+    else:
+        column_direction = "column-reverse"
+        row_direction = "row-reverse"
+
+    board_state.board_column.style(f"flex-direction: {column_direction}")
+    for board_row in board_state.board_rows:
+        board_row.style(f"flex-direction: {row_direction}")
