@@ -72,7 +72,6 @@ def create_move(board, from_square, to_square):
     reaches_last_rank = to_rank == 0 or to_rank == 7
 
     if is_pawn and reaches_last_rank:
-        #TODO user promotion
         return chess.Move(from_square, to_square, promotion=chess.QUEEN)
 
     return chess.Move(from_square, to_square)
