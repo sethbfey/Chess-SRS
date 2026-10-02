@@ -1,7 +1,9 @@
-# src/study-import.py
+# src/study_import.py
 # desc: downloads my white and black repertoire studies from Lichess
 
+import chess
 from urllib.request import urlopen
+from position_graph import build_position_graph
 from database import save_study_pgn, load_saved_study_pgn
 
 WHITE_STUDY_ID = "GG9rv9PT"
@@ -27,13 +29,8 @@ def get_study_pgn(color_name, study_id):
     return pgn_text
 
 
-if __name__ == "__main__":
-    # temp until auto import
-    import chess
-    from position_graph import build_position_graph, count_my_positions
-
-    white_graph = build_position_graph(get_study_pgn("white", WHITE_STUDY_ID))
-    black_graph = build_position_graph(get_study_pgn("black", BLACK_STUDY_ID))
-
-    print(f"White: {len(white_graph)} positions, {count_my_positions(white_graph, chess.WHITE)} with my answer")
-    print(f"Black: {len(black_graph)} positions, {count_my_positions(black_graph, chess.BLACK)} with my answer")
+def import_repertoire():
+    return {
+        chess.WHITE: build_position_graph(get_study_pgn("white", WHITE_STUDY_ID)),
+        chess.BLACK: build_position_graph(get_study_pgn("black", BLACK_STUDY_ID)),
+    }

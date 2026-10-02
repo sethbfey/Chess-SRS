@@ -1,3 +1,5 @@
+# tests/test_position_graph.py
+
 import chess
 from position_graph import build_position_graph, position_key
 

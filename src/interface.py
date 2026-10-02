@@ -40,8 +40,6 @@ class BoardState:
         self.board_rows = []
         self.square_elements = {}
         self.piece_elements = {}
-        self.square_elements = {}
-        self.piece_elements = {}
         self.coordinate_elements = {}
 
 
@@ -109,15 +107,6 @@ def create_click_handler(board_state, square):
 
 
 @ui.refreshable
-def base_square_color(square):
-    file_index = chess.square_file(square)
-    rank_index = chess.square_rank(square)
-
-    if (file_index + rank_index) % 2 == 0:
-        return DARK_SQUARE_COLOR
-    return LIGHT_SQUARE_COLOR
-
-
 def is_dark_square(square):
     file_index = chess.square_file(square)
     rank_index = chess.square_rank(square)
