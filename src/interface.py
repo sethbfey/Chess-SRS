@@ -6,6 +6,7 @@ from pathlib import Path
 from nicegui import ui
 
 PIECES_FOLDER = Path(__file__).parent / "assets" / "pieces"
+SOUNDS_FOLDER = Path(__file__).parent / "assets" / "sounds"
 
 LIGHT_SQUARE_COLOR = "#EBECD0"
 DARK_SQUARE_COLOR = "#739552"
@@ -54,6 +55,7 @@ class BoardState:
         self.on_move_attempted = None
         self.hint_square = None
         self.hint_destination_square = None
+        self.sound_players = {}
 
         self.board_column = None
         self.board_rows = []
@@ -94,9 +96,19 @@ def create_move(board, from_square, to_square):
     return chess.Move(from_square, to_square)
 
 
+def push_move_with_sound(board_state, move):
+    if board_state.board.is_capture(move):
+        sound_name = "capture"
+    else:
+        sound_name = "move"
+
+    board_state.board.push(move)
+    play_sound(board_state, sound_name)
+
+
 def play_free_move(board_state, move):
     if move in board_state.board.legal_moves:
-        board_state.board.push(move)
+        push_move_with_sound(board_state, move)
 
 
 def handle_square_click(board_state, clicked_square):
@@ -136,7 +148,6 @@ def create_click_handler(board_state, square):
     return on_square_click
 
 
-@ui.refreshable
 def is_dark_square(square):
     file_index = chess.square_file(square)
     rank_index = chess.square_rank(square)
@@ -163,6 +174,10 @@ def coordinate_text_color(square, is_highlighted):
 def draw_board(board_state):
     ui.add_css(PIECE_CSS)
     ui.add_css(WRONG_MOVE_CSS)
+
+    for sound_name in ["move", "capture", "wrong"]:
+        sound_path = SOUNDS_FOLDER / f"{sound_name}.mp3"
+        board_state.sound_players[sound_name] = ui.audio(sound_path, controls=False)
 
     board_state.board_column = ui.column().style("gap: 0")
     with board_state.board_column:
@@ -247,3 +262,7 @@ def flip_board(board_state):
     board_state.board_column.style(f"flex-direction: {column_direction}")
     for board_row in board_state.board_rows:
         board_row.style(f"flex-direction: {row_direction}")
+
+
+def play_sound(board_state, sound_name):
+    board_state.sound_players[sound_name].play()

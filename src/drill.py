@@ -3,7 +3,7 @@
 
 import chess
 from nicegui import ui
-from interface import update_board, flip_board, start_wrong_move_flash, stop_wrong_move_flash
+from interface import update_board, flip_board, start_wrong_move_flash, stop_wrong_move_flash, play_sound, push_move_with_sound
 from position_graph import position_key
 from scheduler import choose_opponent_move
 
@@ -60,7 +60,7 @@ class Drill:
 
 
     def play_move(self, move):
-        self.board_state.board.push(move)
+        push_move_with_sound(self.board_state, move)
         self.board_state.hint_square = None
         self.board_state.hint_destination_square = None
         update_board(self.board_state)
@@ -79,6 +79,7 @@ class Drill:
 
     def flash_wrong_move(self, square):
         start_wrong_move_flash(self.board_state, square)
+        play_sound(self.board_state, "wrong")
 
         def stop_flash():
             stop_wrong_move_flash(self.board_state, square)
