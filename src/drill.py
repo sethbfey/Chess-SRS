@@ -9,6 +9,7 @@ from scheduler import choose_opponent_move, grade_result, review_position
 
 OPPONENT_PAUSE_SECONDS = 0.5
 WRONG_MOVE_FLASH_SECONDS = 1.5
+NEXT_LINE_PAUSE_SECONDS = 1.0
 
 
 class Drill:
@@ -22,9 +23,13 @@ class Drill:
         self.results = []
         self.color_name = None
         self.cards = {}
+        self.pending_timer = None
 
 
     def start(self, position_graph, my_color, cards):
+        if self.pending_timer is not None:
+            self.pending_timer.cancel()
+
         self.position_graph = position_graph
         self.my_color = my_color
         self.results = []
@@ -32,16 +37,22 @@ class Drill:
         self.cards = cards
 
         board_state = self.board_state
-        board_state.board.reset()
-        board_state.selected_square = None
-        board_state.hint_square = None
-        board_state.hint_destination_square = None
         board_state.on_move_attempted = self.handle_my_move
 
         my_color_is_at_bottom = board_state.white_at_bottom == (my_color == chess.WHITE)
 
         if not my_color_is_at_bottom:
             flip_board(board_state)
+
+        self.start_line()
+
+
+    def start_line(self):
+        board_state = self.board_state
+        board_state.board.reset()
+        board_state.selected_square = None
+        board_state.hint_square = None
+        board_state.hint_destination_square = None
 
         update_board(board_state)
         self.advance()
@@ -54,6 +65,7 @@ class Drill:
         if not moves:
             self.expected_move = None
             self.board_state.accepts_clicks = False
+            self.pending_timer = ui.timer(NEXT_LINE_PAUSE_SECONDS, self.start_line, once=True)
 
         elif board.turn == self.my_color:
             self.expected_move = chess.Move.from_uci(list(moves)[0])
@@ -64,7 +76,7 @@ class Drill:
         else:
             self.expected_move = None
             self.board_state.accepts_clicks = False
-            ui.timer(OPPONENT_PAUSE_SECONDS, self.play_opponent_move, once=True)
+            self.pending_timer = ui.timer(OPPONENT_PAUSE_SECONDS, self.play_opponent_move, once=True)
 
 
     def play_move(self, move):
