@@ -13,6 +13,8 @@ DARK_SQUARE_COLOR = "#739552"
 LIGHT_HIGHLIGHT_COLOR = "#F5F682"
 DARK_HIGHLIGHT_COLOR = "#B9CA43"
 
+HINT_COLOR = "#52B0DC"
+
 SQUARE_STYLE = (
     "width: 100px; "
     "height: 100px; "
@@ -29,6 +31,18 @@ COORDINATE_STYLE = (
 PIECE_STYLE = "width: 100px; height: 100px; pointer-events: none;"
 PIECE_CSS = ".chess-piece svg { width: 100%; height: 100%; display: block; }"
 
+WRONG_MOVE_CSS = (
+    "@keyframes wrong-move-flash-light { "
+    "0%, 100% { background-color: #EBECD0; } "
+    "50% { background-color: #EB7D6A; } } "
+    "@keyframes wrong-move-flash-dark { "
+    "0%, 100% { background-color: #739552; } "
+    "50% { background-color: #D36C50; } } "
+    ".wrong-move-flash-light { animation: wrong-move-flash-light 0.5s 3; } "
+    ".wrong-move-flash-dark { animation: wrong-move-flash-dark 0.5s 3; }"
+    ".wrong-move-flash-light .square-coordinate { color: #739552 !important; }"
+)
+
 
 class BoardState:
     def __init__(self):
@@ -36,10 +50,13 @@ class BoardState:
         self.white_at_bottom = True
         self.selected_square = None
 
+        self.accepts_clicks = True
+        self.on_move_attempted = None
+        self.hint_square = None
+        self.hint_destination_square = None
+
         self.board_column = None
         self.board_rows = []
-        self.square_elements = {}
-        self.piece_elements = {}
         self.square_elements = {}
         self.piece_elements = {}
         self.coordinate_elements = {}
@@ -77,7 +94,15 @@ def create_move(board, from_square, to_square):
     return chess.Move(from_square, to_square)
 
 
+def play_free_move(board_state, move):
+    if move in board_state.board.legal_moves:
+        board_state.board.push(move)
+
+
 def handle_square_click(board_state, clicked_square):
+    if not board_state.accepts_clicks:
+        return
+
     board = board_state.board
     clicked_piece = board.piece_at(clicked_square)
     clicked_own_piece = clicked_piece is not None and clicked_piece.color == board.turn
@@ -94,9 +119,12 @@ def handle_square_click(board_state, clicked_square):
 
     else:
         move = create_move(board, board_state.selected_square, clicked_square)
-        if move in board.legal_moves:
-            board.push(move)
         board_state.selected_square = None
+
+        if board_state.on_move_attempted is None:
+            play_free_move(board_state, move)
+        else:
+            board_state.on_move_attempted(move)
 
     update_board(board_state)
 
@@ -109,15 +137,6 @@ def create_click_handler(board_state, square):
 
 
 @ui.refreshable
-def base_square_color(square):
-    file_index = chess.square_file(square)
-    rank_index = chess.square_rank(square)
-
-    if (file_index + rank_index) % 2 == 0:
-        return DARK_SQUARE_COLOR
-    return LIGHT_SQUARE_COLOR
-
-
 def is_dark_square(square):
     file_index = chess.square_file(square)
     rank_index = chess.square_rank(square)
@@ -143,6 +162,7 @@ def coordinate_text_color(square, is_highlighted):
 
 def draw_board(board_state):
     ui.add_css(PIECE_CSS)
+    ui.add_css(WRONG_MOVE_CSS)
 
     board_state.board_column = ui.column().style("gap: 0")
     with board_state.board_column:
@@ -160,7 +180,7 @@ def draw_board(board_state):
 
                     with square_element:
                         piece_element = ui.html("", sanitize=False).classes("chess-piece").style(PIECE_STYLE)
-                        coordinate_element = ui.label(coordinate).style(COORDINATE_STYLE)
+                        coordinate_element = ui.label(coordinate).classes("square-coordinate").style(COORDINATE_STYLE)
 
                     board_state.square_elements[square] = square_element
                     board_state.piece_elements[square] = piece_element
@@ -178,10 +198,17 @@ def update_board(board_state):
     for square in chess.SQUARES:
         is_selected = square == board_state.selected_square
         is_last_move_square = square in last_move_squares
+        is_hint_piece_square = square == board_state.hint_square
+        is_hint_destination_square = square == board_state.hint_destination_square
+        is_hint_square = is_hint_piece_square or is_hint_destination_square
         is_highlighted = is_selected or is_last_move_square
 
         square_color = square_background_color(square, is_highlighted)
         text_color = coordinate_text_color(square, is_highlighted)
+
+        if is_hint_square:
+            square_color = HINT_COLOR
+            text_color = LIGHT_SQUARE_COLOR
 
         board_state.square_elements[square].style(f"background-color: {square_color}")
         board_state.coordinate_elements[square].style(f"color: {text_color}")
@@ -191,6 +218,20 @@ def update_board(board_state):
             board_state.piece_elements[square].content = ""
         else:
             board_state.piece_elements[square].content = PIECE_SVGS[piece.symbol()]
+
+
+def wrong_move_flash_class(square):
+    if is_dark_square(square):
+        return "wrong-move-flash-dark"
+    return "wrong-move-flash-light"
+
+
+def start_wrong_move_flash(board_state, square):
+    board_state.square_elements[square].classes(add=wrong_move_flash_class(square))
+
+
+def stop_wrong_move_flash(board_state, square):
+    board_state.square_elements[square].classes(remove=wrong_move_flash_class(square))
 
 
 def flip_board(board_state):
