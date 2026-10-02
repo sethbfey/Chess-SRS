@@ -36,6 +36,9 @@ class BoardState:
         self.white_at_bottom = True
         self.selected_square = None
 
+        self.accepts_clicks = True
+        self.on_move_attempted = None
+
         self.board_column = None
         self.board_rows = []
         self.square_elements = {}
@@ -75,7 +78,15 @@ def create_move(board, from_square, to_square):
     return chess.Move(from_square, to_square)
 
 
+def play_free_move(board_state, move):
+    if move in board_state.board.legal_moves:
+        board_state.board.push(move)
+
+
 def handle_square_click(board_state, clicked_square):
+    if not board_state.accepts_clicks:
+        return
+
     board = board_state.board
     clicked_piece = board.piece_at(clicked_square)
     clicked_own_piece = clicked_piece is not None and clicked_piece.color == board.turn
@@ -92,9 +103,12 @@ def handle_square_click(board_state, clicked_square):
 
     else:
         move = create_move(board, board_state.selected_square, clicked_square)
-        if move in board.legal_moves:
-            board.push(move)
         board_state.selected_square = None
+
+        if board_state.on_move_attempted is None:
+            play_free_move(board_state, move)
+        else:
+            board_state.on_move_attempted(move)
 
     update_board(board_state)
 
