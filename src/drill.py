@@ -18,11 +18,14 @@ class Drill:
         self.my_color = None
         self.expected_move = None
         self.hint_level = 0
+        self.wrong_try_count = 0
+        self.results = []
 
 
     def start(self, position_graph, my_color):
         self.position_graph = position_graph
         self.my_color = my_color
+        self.results = []
 
         board_state = self.board_state
         board_state.board.reset()
@@ -51,6 +54,7 @@ class Drill:
         elif board.turn == self.my_color:
             self.expected_move = chess.Move.from_uci(list(moves)[0])
             self.hint_level = 0
+            self.wrong_try_count = 0
             self.board_state.accepts_clicks = True
 
         else:
@@ -87,12 +91,24 @@ class Drill:
         ui.timer(WRONG_MOVE_FLASH_SECONDS, stop_flash, once=True)
 
 
+    def record_result(self):
+        result = {
+            "position_key": position_key(self.board_state.board),
+            "wrong_try_count": self.wrong_try_count,
+            "hint_level": self.hint_level,
+        }
+        self.results.append(result)
+        print(result) # temp until FSRS
+
+
     def handle_my_move(self, move):
         if move == self.expected_move:
+            self.record_result()
             self.play_move(move)
             self.advance()
 
         elif move in self.board_state.board.legal_moves:
+            self.wrong_try_count += 1
             self.flash_wrong_move(move.from_square)
 
 
