@@ -17,6 +17,7 @@ class Drill:
         self.position_graph = None
         self.my_color = None
         self.expected_move = None
+        self.hint_level = 0
 
 
     def start(self, position_graph, my_color):
@@ -27,6 +28,7 @@ class Drill:
         board_state.board.reset()
         board_state.selected_square = None
         board_state.hint_square = None
+        board_state.hint_destination_square = None
         board_state.on_move_attempted = self.handle_my_move
 
         my_color_is_at_bottom = board_state.white_at_bottom == (my_color == chess.WHITE)
@@ -48,6 +50,7 @@ class Drill:
 
         elif board.turn == self.my_color:
             self.expected_move = chess.Move.from_uci(list(moves)[0])
+            self.hint_level = 0
             self.board_state.accepts_clicks = True
 
         else:
@@ -59,6 +62,7 @@ class Drill:
     def play_move(self, move):
         self.board_state.board.push(move)
         self.board_state.hint_square = None
+        self.board_state.hint_destination_square = None
         update_board(self.board_state)
 
 
@@ -95,5 +99,11 @@ class Drill:
         if self.expected_move is None:
             return
 
+        if self.hint_level < 2:
+            self.hint_level += 1
+
         self.board_state.hint_square = self.expected_move.from_square
+        if self.hint_level == 2:
+            self.board_state.hint_destination_square = self.expected_move.to_square
+
         update_board(self.board_state)

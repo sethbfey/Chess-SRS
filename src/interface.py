@@ -40,6 +40,7 @@ WRONG_MOVE_CSS = (
     "50% { background-color: #D36C50; } } "
     ".wrong-move-flash-light { animation: wrong-move-flash-light 0.5s 3; } "
     ".wrong-move-flash-dark { animation: wrong-move-flash-dark 0.5s 3; }"
+    ".wrong-move-flash-light .square-coordinate { color: #739552 !important; }"
 )
 
 
@@ -52,6 +53,7 @@ class BoardState:
         self.accepts_clicks = True
         self.on_move_attempted = None
         self.hint_square = None
+        self.hint_destination_square = None
 
         self.board_column = None
         self.board_rows = []
@@ -178,7 +180,7 @@ def draw_board(board_state):
 
                     with square_element:
                         piece_element = ui.html("", sanitize=False).classes("chess-piece").style(PIECE_STYLE)
-                        coordinate_element = ui.label(coordinate).style(COORDINATE_STYLE)
+                        coordinate_element = ui.label(coordinate).classes("square-coordinate").style(COORDINATE_STYLE)
 
                     board_state.square_elements[square] = square_element
                     board_state.piece_elements[square] = piece_element
@@ -196,7 +198,9 @@ def update_board(board_state):
     for square in chess.SQUARES:
         is_selected = square == board_state.selected_square
         is_last_move_square = square in last_move_squares
-        is_hint_square = square == board_state.hint_square
+        is_hint_piece_square = square == board_state.hint_square
+        is_hint_destination_square = square == board_state.hint_destination_square
+        is_hint_square = is_hint_piece_square or is_hint_destination_square
         is_highlighted = is_selected or is_last_move_square
 
         square_color = square_background_color(square, is_highlighted)
@@ -204,6 +208,7 @@ def update_board(board_state):
 
         if is_hint_square:
             square_color = HINT_COLOR
+            text_color = LIGHT_SQUARE_COLOR
 
         board_state.square_elements[square].style(f"background-color: {square_color}")
         board_state.coordinate_elements[square].style(f"color: {text_color}")
