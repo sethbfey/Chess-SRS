@@ -50,6 +50,6 @@ def save_card(color_name, position_key, move_uci, card_json, wrong_try_count, hi
 
 def load_saved_cards(color_name):
     connection = connect_to_database()
-    rows = connection.execute("SELECT position_key, card_json FROM cards WHERE color = ?", (color_name,)).fetchall()
+    rows = connection.execute("SELECT position_key, move_uci, card_json FROM cards WHERE color = ?", (color_name,)).fetchall()
     connection.close()
     return rows

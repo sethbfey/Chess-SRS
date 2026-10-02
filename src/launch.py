@@ -44,8 +44,8 @@ def main_page():
     drill = Drill(board_state)
 
     cards = {
-        chess.WHITE: load_cards("white"),
-        chess.BLACK: load_cards("black"),
+        chess.WHITE: load_cards("white", repertoire[chess.WHITE]),
+        chess.BLACK: load_cards("black", repertoire[chess.BLACK]),
     }
     due_labels = {}
     new_labels = {}

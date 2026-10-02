@@ -24,10 +24,11 @@ def grade_result(wrong_try_count, hint_level):
     return Rating.Good
 
 
-def load_cards(color_name):
+def load_cards(color_name, position_graph):
     cards = {}
-    for key, card_json in load_saved_cards(color_name):
-        cards[key] = Card.from_json(card_json)
+    for key, move_uci, card_json in load_saved_cards(color_name):
+        if key in position_graph and move_uci in position_graph[key]:
+            cards[key] = Card.from_json(card_json)
     return cards
 
 
@@ -100,7 +101,6 @@ def choose_opponent_move(position_graph, cards, key, my_color):
         elif need == best_need:
             best_moves.append(move_uci)
 
-    print(f"line need {best_need:.2f}") # temp for now
     return random.choice(best_moves)
 
 

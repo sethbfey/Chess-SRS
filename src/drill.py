@@ -20,7 +20,6 @@ class Drill:
         self.expected_move = None
         self.hint_level = 0
         self.wrong_try_count = 0
-        self.results = []
         self.color_name = None
         self.cards = {}
         self.pending_timer = None
@@ -48,7 +47,6 @@ class Drill:
 
         self.position_graph = position_graph
         self.my_color = my_color
-        self.results = []
         self.color_name = chess.COLOR_NAMES[my_color]
         self.cards = cards
 
@@ -152,11 +150,7 @@ class Drill:
             "hint_level": self.hint_level,
             "grade": grade_result(self.wrong_try_count, self.hint_level),
         }
-        self.results.append(result)
-
-        card = review_position(self.cards, self.color_name, result)
-        due_time = card.due.astimezone().strftime("%Y-%m-%d %H:%M")
-        print(result["grade"].name, card.state.name, "due", due_time)
+        review_position(self.cards, self.color_name, result)
 
 
     def handle_my_move(self, move):
