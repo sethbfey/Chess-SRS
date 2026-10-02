@@ -24,11 +24,27 @@ class Drill:
         self.color_name = None
         self.cards = {}
         self.pending_timer = None
+        self.focus_moves = []
 
 
     def start(self, position_graph, my_color, cards):
         if self.pending_timer is not None:
             self.pending_timer.cancel()
+
+        board_state = self.board_state
+        board = board_state.board
+
+        started_from_free_play = board_state.on_move_attempted is None
+        key = position_key(board)
+
+        position_has_theory = False
+        if key in position_graph:
+            position_has_theory = len(position_graph[key]) > 0
+
+        if started_from_free_play and position_has_theory:
+            self.focus_moves = list(board.move_stack)
+        else:
+            self.focus_moves = []
 
         self.position_graph = position_graph
         self.my_color = my_color
@@ -36,7 +52,6 @@ class Drill:
         self.color_name = chess.COLOR_NAMES[my_color]
         self.cards = cards
 
-        board_state = self.board_state
         board_state.on_move_attempted = self.handle_my_move
 
         my_color_is_at_bottom = board_state.white_at_bottom == (my_color == chess.WHITE)
@@ -50,6 +65,9 @@ class Drill:
     def start_line(self):
         board_state = self.board_state
         board_state.board.reset()
+        for move in self.focus_moves:
+            board_state.board.push(move)
+
         board_state.selected_square = None
         board_state.hint_square = None
         board_state.hint_destination_square = None
@@ -64,6 +82,7 @@ class Drill:
 
         self.my_color = None
         self.expected_move = None
+        self.focus_moves = []
 
         board_state = self.board_state
         board_state.board.reset()
@@ -74,7 +93,7 @@ class Drill:
         board_state.accepts_clicks = True
 
         update_board(board_state)
-        
+
 
     def advance(self):
         board = self.board_state.board

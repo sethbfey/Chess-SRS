@@ -58,14 +58,20 @@ def main_page():
             new_labels[color].text = str(new_count)
 
 
+    def drill_mode_text(color_word):
+        if drill.focus_moves:
+            return f"Focus {color_word}"
+        return f"Drilling {color_word}"
+
+
     def on_start_white_click():
         drill.start(repertoire[chess.WHITE], chess.WHITE, cards[chess.WHITE])
-        mode_label.text = "Drilling White"
+        mode_label.text = drill_mode_text("White")
 
 
     def on_start_black_click():
         drill.start(repertoire[chess.BLACK], chess.BLACK, cards[chess.BLACK])
-        mode_label.text = "Drilling Black"
+        mode_label.text = drill_mode_text("Black")
 
 
     def on_clear_click():
