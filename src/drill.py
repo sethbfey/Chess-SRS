@@ -26,6 +26,7 @@ class Drill:
         board_state = self.board_state
         board_state.board.reset()
         board_state.selected_square = None
+        board_state.hint_square = None
         board_state.on_move_attempted = self.handle_my_move
 
         my_color_is_at_bottom = board_state.white_at_bottom == (my_color == chess.WHITE)
@@ -55,6 +56,12 @@ class Drill:
             ui.timer(OPPONENT_PAUSE_SECONDS, self.play_opponent_move, once=True)
 
 
+    def play_move(self, move):
+        self.board_state.board.push(move)
+        self.board_state.hint_square = None
+        update_board(self.board_state)
+
+
     def play_opponent_move(self):
         board = self.board_state.board
 
@@ -74,7 +81,7 @@ class Drill:
 
         ui.timer(WRONG_MOVE_FLASH_SECONDS, stop_flash, once=True)
 
-    
+
     def handle_my_move(self, move):
         if move == self.expected_move:
             self.play_move(move)
@@ -84,6 +91,9 @@ class Drill:
             self.flash_wrong_move(move.from_square)
 
 
-    def play_move(self, move):
-        self.board_state.board.push(move)
+    def show_hint(self):
+        if self.expected_move is None:
+            return
+
+        self.board_state.hint_square = self.expected_move.from_square
         update_board(self.board_state)

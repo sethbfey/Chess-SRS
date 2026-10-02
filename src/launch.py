@@ -37,7 +37,6 @@ def draw_button(text, on_click):
 
 
 @ui.page("/")
-@ui.page("/")
 def main_page():
     board_state = BoardState()
     drill = Drill(board_state)
@@ -66,9 +65,11 @@ def main_page():
             ui.label("Drill").style(PANEL_HEADING_STYLE)
             draw_button("Start White", on_start_white_click)
             draw_button("Start Black", on_start_black_click)
+            draw_button("Hint", drill.show_hint)
 
             ui.separator()
             draw_button("Flip board", on_flip_click)
+
 
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run()
