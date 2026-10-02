@@ -58,6 +58,24 @@ class Drill:
         self.advance()
 
 
+    def stop(self):
+        if self.pending_timer is not None:
+            self.pending_timer.cancel()
+
+        self.my_color = None
+        self.expected_move = None
+
+        board_state = self.board_state
+        board_state.board.reset()
+        board_state.selected_square = None
+        board_state.hint_square = None
+        board_state.hint_destination_square = None
+        board_state.on_move_attempted = None
+        board_state.accepts_clicks = True
+
+        update_board(board_state)
+        
+
     def advance(self):
         board = self.board_state.board
         moves = self.position_graph[position_key(board)]

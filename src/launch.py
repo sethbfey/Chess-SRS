@@ -50,20 +50,32 @@ def main_page():
     due_labels = {}
     new_labels = {}
 
+
     def update_counts():
         for color in [chess.WHITE, chess.BLACK]:
             due_count, new_count = count_due_and_new_positions(repertoire[color], cards[color], color)
             due_labels[color].text = str(due_count)
             new_labels[color].text = str(new_count)
 
+
     def on_start_white_click():
         drill.start(repertoire[chess.WHITE], chess.WHITE, cards[chess.WHITE])
+        mode_label.text = "Drilling White"
+
 
     def on_start_black_click():
         drill.start(repertoire[chess.BLACK], chess.BLACK, cards[chess.BLACK])
+        mode_label.text = "Drilling Black"
+
+
+    def on_clear_click():
+        drill.stop()
+        mode_label.text = "Free play"
+
 
     def on_flip_click():
         flip_board(board_state)
+
 
     with ui.row().style("gap: 24px; align-items: flex-start;"):
         draw_board(board_state)
@@ -80,9 +92,12 @@ def main_page():
 
             ui.separator()
             ui.label("Drill").style(PANEL_HEADING_STYLE)
+            mode_label = draw_count_row("Mode")
+            mode_label.text = "Free play"
             draw_button("Start White", on_start_white_click)
             draw_button("Start Black", on_start_black_click)
             draw_button("Hint", drill.show_hint)
+            draw_button("Clear", on_clear_click)
 
             ui.separator()
             draw_button("Flip board", on_flip_click)
