@@ -5,7 +5,7 @@ import chess
 from nicegui import ui
 from interface import update_board, flip_board, start_wrong_move_flash, stop_wrong_move_flash, play_sound, push_move_with_sound
 from position_graph import position_key
-from scheduler import choose_opponent_move
+from scheduler import choose_opponent_move, grade_result
 
 OPPONENT_PAUSE_SECONDS = 0.5
 WRONG_MOVE_FLASH_SECONDS = 1.5
@@ -96,6 +96,7 @@ class Drill:
             "position_key": position_key(self.board_state.board),
             "wrong_try_count": self.wrong_try_count,
             "hint_level": self.hint_level,
+            "grade": grade_result(self.wrong_try_count, self.hint_level),
         }
         self.results.append(result)
         print(result) # temp until FSRS
