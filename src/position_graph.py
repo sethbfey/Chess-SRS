@@ -35,12 +35,3 @@ def add_variations(position_graph, node, board):
 
         add_variations(position_graph, variation, board)
         board.pop()
-
-
-def count_my_positions(position_graph, my_color):
-    my_position_count = 0
-    for key, moves in position_graph.items():
-        board = chess.Board(key)
-        if board.turn == my_color and moves:
-            my_position_count += 1
-    return my_position_count

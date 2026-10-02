@@ -102,3 +102,20 @@ def choose_opponent_move(position_graph, cards, key, my_color):
 
     print(f"line need {best_need:.2f}") # temp for now
     return random.choice(best_moves)
+
+
+def count_due_and_new_positions(position_graph, cards, my_color):
+    now = datetime.now(timezone.utc)
+    due_count = 0
+    new_count = 0
+
+    for key, moves in position_graph.items():
+        if not moves or not is_my_turn(key, my_color):
+            continue
+
+        if key not in cards:
+            new_count += 1
+        elif cards[key].due <= now:
+            due_count += 1
+
+    return due_count, new_count

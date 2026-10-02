@@ -4,8 +4,8 @@
 import chess
 from nicegui import app, ui
 from interface import BoardState, draw_board, flip_board, DARK_SQUARE_COLOR
-from position_graph import count_my_positions
 from study_import import import_repertoire
+from scheduler import load_cards, count_due_and_new_positions
 from drill import Drill
 
 PANEL_HEADING_STYLE = (
@@ -15,6 +15,8 @@ PANEL_HEADING_STYLE = (
     "text-transform: uppercase; "
     "color: #888;"
 )
+
+COUNT_UPDATE_SECONDS = 1.0
 
 repertoire = {}
 
@@ -26,10 +28,10 @@ def load_repertoire():
 app.on_startup(load_repertoire)
 
 
-def draw_count_row(name, count):
+def draw_count_row(name):
     with ui.row().style("width: 100%; justify-content: space-between;"):
         ui.label(name)
-        ui.label(str(count)).style("font-weight: 600;")
+        return ui.label("0").style("font-weight: 600;")
 
 
 def draw_button(text, on_click):
@@ -41,11 +43,24 @@ def main_page():
     board_state = BoardState()
     drill = Drill(board_state)
 
+    cards = {
+        chess.WHITE: load_cards("white"),
+        chess.BLACK: load_cards("black"),
+    }
+    due_labels = {}
+    new_labels = {}
+
+    def update_counts():
+        for color in [chess.WHITE, chess.BLACK]:
+            due_count, new_count = count_due_and_new_positions(repertoire[color], cards[color], color)
+            due_labels[color].text = str(due_count)
+            new_labels[color].text = str(new_count)
+
     def on_start_white_click():
-        drill.start(repertoire[chess.WHITE], chess.WHITE)
+        drill.start(repertoire[chess.WHITE], chess.WHITE, cards[chess.WHITE])
 
     def on_start_black_click():
-        drill.start(repertoire[chess.BLACK], chess.BLACK)
+        drill.start(repertoire[chess.BLACK], chess.BLACK, cards[chess.BLACK])
 
     def on_flip_click():
         flip_board(board_state)
@@ -54,12 +69,14 @@ def main_page():
         draw_board(board_state)
 
         with ui.card().style("width: 220px; gap: 12px;"):
-            ui.label("Repertoire").style(PANEL_HEADING_STYLE)
+            ui.label("White").style(PANEL_HEADING_STYLE)
+            due_labels[chess.WHITE] = draw_count_row("Due now")
+            new_labels[chess.WHITE] = draw_count_row("New")
 
-            white_position_count = count_my_positions(repertoire[chess.WHITE], chess.WHITE)
-            black_position_count = count_my_positions(repertoire[chess.BLACK], chess.BLACK)
-            draw_count_row("White", white_position_count)
-            draw_count_row("Black", black_position_count)
+            ui.separator()
+            ui.label("Black").style(PANEL_HEADING_STYLE)
+            due_labels[chess.BLACK] = draw_count_row("Due now")
+            new_labels[chess.BLACK] = draw_count_row("New")
 
             ui.separator()
             ui.label("Drill").style(PANEL_HEADING_STYLE)
@@ -69,6 +86,9 @@ def main_page():
 
             ui.separator()
             draw_button("Flip board", on_flip_click)
+
+    update_counts()
+    ui.timer(COUNT_UPDATE_SECONDS, update_counts)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
