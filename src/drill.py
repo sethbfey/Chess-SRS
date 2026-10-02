@@ -3,11 +3,12 @@
 
 import chess
 from nicegui import ui
-from interface import update_board, flip_board
+from interface import update_board, flip_board, start_wrong_move_flash, stop_wrong_move_flash
 from position_graph import position_key
 from scheduler import choose_opponent_move
 
 OPPONENT_PAUSE_SECONDS = 0.5
+WRONG_MOVE_FLASH_SECONDS = 1.5
 
 
 class Drill:
@@ -16,6 +17,7 @@ class Drill:
         self.position_graph = None
         self.my_color = None
         self.expected_move = None
+
 
     def start(self, position_graph, my_color):
         self.position_graph = position_graph
@@ -27,11 +29,13 @@ class Drill:
         board_state.on_move_attempted = self.handle_my_move
 
         my_color_is_at_bottom = board_state.white_at_bottom == (my_color == chess.WHITE)
+
         if not my_color_is_at_bottom:
             flip_board(board_state)
 
         update_board(board_state)
         self.advance()
+
 
     def advance(self):
         board = self.board_state.board
@@ -50,9 +54,10 @@ class Drill:
             self.board_state.accepts_clicks = False
             ui.timer(OPPONENT_PAUSE_SECONDS, self.play_opponent_move, once=True)
 
+
     def play_opponent_move(self):
         board = self.board_state.board
-        
+
         if board.turn == self.my_color:
             return
 
@@ -60,10 +65,24 @@ class Drill:
         self.play_move(chess.Move.from_uci(move_uci))
         self.advance()
 
+
+    def flash_wrong_move(self, square):
+        start_wrong_move_flash(self.board_state, square)
+
+        def stop_flash():
+            stop_wrong_move_flash(self.board_state, square)
+
+        ui.timer(WRONG_MOVE_FLASH_SECONDS, stop_flash, once=True)
+
+    
     def handle_my_move(self, move):
         if move == self.expected_move:
             self.play_move(move)
             self.advance()
+
+        elif move in self.board_state.board.legal_moves:
+            self.flash_wrong_move(move.from_square)
+
 
     def play_move(self, move):
         self.board_state.board.push(move)

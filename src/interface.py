@@ -29,6 +29,13 @@ COORDINATE_STYLE = (
 PIECE_STYLE = "width: 100px; height: 100px; pointer-events: none;"
 PIECE_CSS = ".chess-piece svg { width: 100%; height: 100%; display: block; }"
 
+WRONG_MOVE_CSS = (
+    "@keyframes wrong-move-flash-light { 50% { background-color: #EB7D6A; } } "
+    "@keyframes wrong-move-flash-dark { 50% { background-color: #D36C50; } } "
+    ".wrong-move-flash-light { animation: wrong-move-flash-light 0.5s 3; } "
+    ".wrong-move-flash-dark { animation: wrong-move-flash-dark 0.5s 3; }"
+)
+
 
 class BoardState:
     def __init__(self):
@@ -146,6 +153,7 @@ def coordinate_text_color(square, is_highlighted):
 
 def draw_board(board_state):
     ui.add_css(PIECE_CSS)
+    ui.add_css(WRONG_MOVE_CSS)
 
     board_state.board_column = ui.column().style("gap: 0")
     with board_state.board_column:
@@ -194,6 +202,20 @@ def update_board(board_state):
             board_state.piece_elements[square].content = ""
         else:
             board_state.piece_elements[square].content = PIECE_SVGS[piece.symbol()]
+
+
+def wrong_move_flash_class(square):
+    if is_dark_square(square):
+        return "wrong-move-flash-dark"
+    return "wrong-move-flash-light"
+
+
+def start_wrong_move_flash(board_state, square):
+    board_state.square_elements[square].classes(add=wrong_move_flash_class(square))
+
+
+def stop_wrong_move_flash(board_state, square):
+    board_state.square_elements[square].classes(remove=wrong_move_flash_class(square))
 
 
 def flip_board(board_state):
