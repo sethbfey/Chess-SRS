@@ -5,7 +5,7 @@ import chess
 from nicegui import ui
 from interface import update_board, flip_board, start_wrong_move_flash, stop_wrong_move_flash, play_sound, push_move_with_sound
 from position_graph import position_key
-from scheduler import choose_opponent_move, grade_result
+from scheduler import choose_opponent_move, grade_result, load_cards, review_position
 
 OPPONENT_PAUSE_SECONDS = 0.5
 WRONG_MOVE_FLASH_SECONDS = 1.5
@@ -20,12 +20,16 @@ class Drill:
         self.hint_level = 0
         self.wrong_try_count = 0
         self.results = []
+        self.color_name = None
+        self.cards = {}
 
 
     def start(self, position_graph, my_color):
         self.position_graph = position_graph
         self.my_color = my_color
         self.results = []
+        self.color_name = chess.COLOR_NAMES[my_color]
+        self.cards = load_cards(self.color_name)
 
         board_state = self.board_state
         board_state.board.reset()
@@ -76,7 +80,7 @@ class Drill:
         if board.turn == self.my_color:
             return
 
-        move_uci = choose_opponent_move(self.position_graph, position_key(board))
+        move_uci = choose_opponent_move(self.position_graph, self.cards, position_key(board), self.my_color)
         self.play_move(chess.Move.from_uci(move_uci))
         self.advance()
 
@@ -94,12 +98,16 @@ class Drill:
     def record_result(self):
         result = {
             "position_key": position_key(self.board_state.board),
+            "move_uci": self.expected_move.uci(),
             "wrong_try_count": self.wrong_try_count,
             "hint_level": self.hint_level,
             "grade": grade_result(self.wrong_try_count, self.hint_level),
         }
         self.results.append(result)
-        print(result) # temp until FSRS
+
+        card = review_position(self.cards, self.color_name, result)
+        due_time = card.due.astimezone().strftime("%Y-%m-%d %H:%M")
+        print(result["grade"].name, card.state.name, "due", due_time)
 
 
     def handle_my_move(self, move):
